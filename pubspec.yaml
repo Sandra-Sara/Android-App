@@ -1,14 +1,16 @@
-name: login_demo
-description: A Flutter login app with animations and glossy UI for Teacher and Student.
+name: student_teacher_app
+description: A Flutter app for student-teacher communication
 version: 1.0.0
+
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_animate: ^4.5.0
-  intl: ^0.19.0
+  shared_preferences: ^2.2.3
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
@@ -18,4 +20,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/Instagram.png
+    - assets/instagram.png
+    - assets/dulogo.png
+    
