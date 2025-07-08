@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
-import 'package:intl/intl.dart';
-import 'main.dart'; // Import main.dart for StudentHomePage, TeacherHomePage, and LoginType
+import 'login.dart';
+
+enum LoginType { student, teacher }
 
 class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
+
   @override
   _SignUpPageState createState() => _SignUpPageState();
 }
@@ -13,50 +17,31 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
-  final TextEditingController dobController = TextEditingController();
-  final TextEditingController regNoController = TextEditingController();
-  final TextEditingController teacherIdController = TextEditingController();
-  LoginType _signUpType = LoginType.student;
-  DateTime? _selectedDate;
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController regOrTeacherIdController = TextEditingController();
+  LoginType _loginType = LoginType.student;
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        dobController.text = DateFormat('yyyy-MM-dd').format(picked);
-      });
-    }
-  }
-
-  void _handleSignUp() {
+  Future<void> _handleSignUp() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
     String confirmPassword = confirmPasswordController.text.trim();
-    String dob = dobController.text.trim();
-    String regNo = regNoController.text.trim();
-    String teacherId = teacherIdController.text.trim();
+    String name = nameController.text.trim();
+    String regOrTeacherId = regOrTeacherIdController.text.trim();
 
-    // Common validations
-    if (email.isEmpty || !email.contains("@") || !email.contains(".")) {
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty || name.isEmpty || regOrTeacherId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Please enter a valid email"),
+        const SnackBar(
+          content: Text("Please fill in all fields"),
           backgroundColor: Colors.redAccent,
         ),
       );
       return;
     }
 
-    if (password.isEmpty || password.length < 6) {
+    if (!email.contains("@") || !email.contains(".")) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Password must be at least 6 characters"),
+        const SnackBar(
+          content: Text("Please enter a valid email"),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -65,7 +50,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Passwords do not match"),
           backgroundColor: Colors.redAccent,
         ),
@@ -73,94 +58,91 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
-    if (_signUpType == LoginType.teacher) {
-      // Teacher sign-up: Validate Teacher ID
-      if (teacherId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Please enter a Teacher ID"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
-      }
-      // Mock sign-up success
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TeacherHomePage(teacherId: teacherId),
-        ),
-      );
-    } else {
-      // Student sign-up: Validate DOB and Registration Number
-      if (dob.isEmpty || _selectedDate == null || _selectedDate!.isAfter(DateTime.now())) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Please enter a valid Date of Birth"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
-      }
-      if (regNo.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Please enter a Registration Number"),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
-      }
-      // Mock sign-up success
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StudentHomePage(
-            username: email,
-            dob: dob,
-            regNo: regNo,
-          ),
-        ),
-      );
-    }
-  }
+    final prefs = await SharedPreferences.getInstance();
+    String userKey = 'user_${email.hashCode}';
+    String? storedEmail = prefs.getString('${userKey}_email');
 
-  void _navigateToLogin() {
+    if (storedEmail != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Email already registered"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    await prefs.setString('${userKey}_email', email);
+    await prefs.setString('${userKey}_password', password);
+    await prefs.setString('${userKey}_role', _loginType == LoginType.student ? 'student' : 'teacher');
+    await prefs.setString('${userKey}_name', name);
+    if (_loginType == LoginType.student) {
+      await prefs.setString('${userKey}_reg', regOrTeacherId);
+    } else {
+      await prefs.setString('${userKey}_teacherId', regOrTeacherId);
+    }
+
+    await prefs.setString('token', 'mock_token_${email.hashCode}');
+    await prefs.setString('user_role', _loginType == LoginType.student ? 'student' : 'teacher');
+    await prefs.setString('profile_email', email);
+    await prefs.setString('profile_name', name);
+    if (_loginType == LoginType.student) {
+      await prefs.setString('profile_reg', regOrTeacherId);
+    } else {
+      await prefs.setString('profile_teacherId', regOrTeacherId);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("${_loginType == LoginType.student ? 'Student' : 'Teacher'} account created successfully"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    nameController.dispose();
+    regOrTeacherIdController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.deepPurple.shade300, Colors.blue.shade200],
+            colors: [Colors.blue, Colors.deepPurple],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Center(
                   child: Image.asset(
-                    'assets/Instagram.png',
+                    'assets/dulogo.png',
                     width: 220,
                     height: 110,
-                    color: Colors.white.withOpacity(0.9),
-                    colorBlendMode: BlendMode.modulate,
+                    fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         width: 220,
                         height: 110,
-                        child: Icon(
+                        child: const Icon(
                           Icons.image_not_supported,
                           size: 60,
                           color: Colors.white70,
@@ -172,7 +154,16 @@ class _SignUpPageState extends State<SignUpPage> {
                       .fadeIn(duration: 800.ms)
                       .scaleXY(begin: 0.8, end: 1.0, curve: Curves.easeOut),
                 ),
-                SizedBox(height: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'University Of Dhaka',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 48),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: BackdropFilter(
@@ -189,16 +180,16 @@ class _SignUpPageState extends State<SignUpPage> {
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
                             blurRadius: 10,
-                            offset: Offset(0, 5),
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           children: [
                             SegmentedButton<LoginType>(
-                              segments: [
+                              segments: const [
                                 ButtonSegment(
                                   value: LoginType.student,
                                   label: Text('Student'),
@@ -210,37 +201,35 @@ class _SignUpPageState extends State<SignUpPage> {
                                   icon: Icon(Icons.person_2),
                                 ),
                               ],
-                              selected: {_signUpType},
+                              selected: {_loginType},
                               onSelectionChanged: (newSelection) {
                                 setState(() {
-                                  _signUpType = newSelection.first;
+                                  _loginType = newSelection.first;
                                   emailController.clear();
                                   passwordController.clear();
                                   confirmPasswordController.clear();
-                                  dobController.clear();
-                                  regNoController.clear();
-                                  teacherIdController.clear();
-                                  _selectedDate = null;
+                                  nameController.clear();
+                                  regOrTeacherIdController.clear();
                                 });
                               },
                             ).animate().fadeIn(duration: 600.ms),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             TextField(
-                              controller: emailController,
+                              controller: nameController,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.2),
+                                fillColor: Colors.white24,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
                                 ),
-                                labelText: 'Email',
-                                hintText: 'e.g. user@example.com',
-                                prefixIcon: Icon(Icons.email, color: Colors.white70),
-                                labelStyle: TextStyle(color: Colors.white70),
-                                hintStyle: TextStyle(color: Colors.white54),
+                                labelText: 'Full Name',
+                                hintText: 'e.g. John Doe',
+                                prefixIcon: const Icon(Icons.person, color: Colors.white70),
+                                labelStyle: const TextStyle(color: Colors.white70),
+                                hintStyle: const TextStyle(color: Colors.white54),
                               ),
-                              style: TextStyle(color: Colors.white),
+                              style: const TextStyle(color: Colors.white),
                             )
                                 .animate()
                                 .slideX(
@@ -250,24 +239,51 @@ class _SignUpPageState extends State<SignUpPage> {
                               curve: Curves.easeOut,
                             )
                                 .fadeIn(duration: 600.ms),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: emailController,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white24,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                labelText: 'Email',
+                                hintText: 'e.g. user@example.com',
+                                prefixIcon: const Icon(Icons.email, color: Colors.white70),
+                                labelStyle: const TextStyle(color: Colors.white70),
+                                hintStyle: const TextStyle(color: Colors.white54),
+                              ),
+                              style: const TextStyle(color: Colors.white),
+                              keyboardType: TextInputType.emailAddress,
+                            )
+                                .animate()
+                                .slideX(
+                              begin: -0.5,
+                              end: 0,
+                              duration: 600.ms,
+                              curve: Curves.easeOut,
+                            )
+                                .fadeIn(duration: 600.ms),
+                            const SizedBox(height: 16),
                             TextField(
                               controller: passwordController,
                               obscureText: true,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.2),
+                                fillColor: Colors.white24,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
                                 ),
                                 labelText: 'Password',
-                                hintText: 'At least 6 characters',
-                                prefixIcon: Icon(Icons.lock, color: Colors.white70),
-                                labelStyle: TextStyle(color: Colors.white70),
-                                hintStyle: TextStyle(color: Colors.white54),
+                                hintText: 'Enter your password',
+                                prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+                                labelStyle: const TextStyle(color: Colors.white70),
+                                hintStyle: const TextStyle(color: Colors.white54),
                               ),
-                              style: TextStyle(color: Colors.white),
+                              style: const TextStyle(color: Colors.white),
                             )
                                 .animate()
                                 .slideX(
@@ -277,124 +293,70 @@ class _SignUpPageState extends State<SignUpPage> {
                               curve: Curves.easeOut,
                             )
                                 .fadeIn(duration: 600.ms),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             TextField(
                               controller: confirmPasswordController,
                               obscureText: true,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.2),
+                                fillColor: Colors.white24,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
                                 ),
                                 labelText: 'Confirm Password',
                                 hintText: 'Re-enter your password',
-                                prefixIcon: Icon(Icons.lock, color: Colors.white70),
-                                labelStyle: TextStyle(color: Colors.white70),
-                                hintStyle: TextStyle(color: Colors.white54),
+                                prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+                                labelStyle: const TextStyle(color: Colors.white70),
+                                hintStyle: const TextStyle(color: Colors.white54),
                               ),
-                              style: TextStyle(color: Colors.white),
+                              style: const TextStyle(color: Colors.white),
                             )
                                 .animate()
                                 .slideX(
-                              begin: -0.5,
+                              begin: 0.5,
                               end: 0,
                               duration: 600.ms,
                               curve: Curves.easeOut,
                             )
                                 .fadeIn(duration: 600.ms),
-                            if (_signUpType == LoginType.student) ...[
-                              SizedBox(height: 16),
-                              TextField(
-                                controller: dobController,
-                                readOnly: true,
-                                onTap: () => _selectDate(context),
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: Colors.white.withOpacity(0.2),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  labelText: 'Date of Birth',
-                                  hintText: 'YYYY-MM-DD',
-                                  prefixIcon: Icon(Icons.calendar_today, color: Colors.white70),
-                                  labelStyle: TextStyle(color: Colors.white70),
-                                  hintStyle: TextStyle(color: Colors.white54),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: regOrTeacherIdController,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white24,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
                                 ),
-                                style: TextStyle(color: Colors.white),
-                              )
-                                  .animate()
-                                  .slideX(
-                                begin: 0.5,
-                                end: 0,
-                                duration: 600.ms,
-                                curve: Curves.easeOut,
-                              )
-                                  .fadeIn(duration: 600.ms),
-                              SizedBox(height: 16),
-                              TextField(
-                                controller: regNoController,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: Colors.white.withOpacity(0.2),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  labelText: 'Registration Number',
-                                  hintText: 'e.g. REG12345',
-                                  prefixIcon: Icon(Icons.badge, color: Colors.white70),
-                                  labelStyle: TextStyle(color: Colors.white70),
-                                  hintStyle: TextStyle(color: Colors.white54),
-                                ),
-                                style: TextStyle(color: Colors.white),
-                              )
-                                  .animate()
-                                  .slideX(
-                                begin: -0.5,
-                                end: 0,
-                                duration: 600.ms,
-                                curve: Curves.easeOut,
-                              )
-                                  .fadeIn(duration: 600.ms),
-                            ],
-                            if (_signUpType == LoginType.teacher) ...[
-                              SizedBox(height: 16),
-                              TextField(
-                                controller: teacherIdController,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: Colors.white.withOpacity(0.2),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  labelText: 'Teacher ID',
-                                  hintText: 'e.g. TID789',
-                                  prefixIcon: Icon(Icons.perm_identity, color: Colors.white70),
-                                  labelStyle: TextStyle(color: Colors.white70),
-                                  hintStyle: TextStyle(color: Colors.white54),
-                                ),
-                                style: TextStyle(color: Colors.white),
-                              )
-                                  .animate()
-                                  .slideX(
-                                begin: 0.5,
-                                end: 0,
-                                duration: 600.ms,
-                                curve: Curves.easeOut,
-                              )
-                                  .fadeIn(duration: 600.ms),
-                            ],
-                            SizedBox(height: 24),
+                                labelText: _loginType == LoginType.student
+                                    ? 'Registration Number'
+                                    : 'Teacher ID',
+                                hintText: _loginType == LoginType.student
+                                    ? 'e.g. 2022315933'
+                                    : 'e.g. T12345',
+                                prefixIcon: const Icon(Icons.badge, color: Colors.white70),
+                                labelStyle: const TextStyle(color: Colors.white70),
+                                hintStyle: const TextStyle(color: Colors.white54),
+                              ),
+                              style: const TextStyle(color: Colors.white),
+                            )
+                                .animate()
+                                .slideX(
+                              begin: 0.5,
+                              end: 0,
+                              duration: 600.ms,
+                              curve: Curves.easeOut,
+                            )
+                                .fadeIn(duration: 600.ms),
+                            const SizedBox(height: 24),
                             Container(
                               width: double.infinity,
                               height: 50,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.deepPurple, Colors.blueAccent],
+                                gradient: const LinearGradient(
+                                  colors: [Colors.blue, Colors.deepPurple],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
@@ -403,7 +365,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.2),
                                     blurRadius: 8,
-                                    offset: Offset(0, 4),
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
@@ -416,19 +378,12 @@ class _SignUpPageState extends State<SignUpPage> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: Text(
+                                child: const Text(
                                   "Sign Up",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: Offset(1, 1),
-                                      ),
-                                    ],
                                   ),
                                 ),
                               ),
@@ -447,35 +402,28 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       "Already have an account? ",
                       style: TextStyle(
                         color: Colors.white70,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 4,
-                          ),
-                        ],
                       ),
                     ),
                     GestureDetector(
-                      onTap: _navigateToLogin,
-                      child: Text(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                        );
+                      },
+                      child: const Text(
                         "Log In",
                         style: TextStyle(
                           color: Colors.yellowAccent,
                           fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                            ),
-                          ],
                         ),
                       ),
                     ),
