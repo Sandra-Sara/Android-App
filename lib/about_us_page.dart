@@ -68,7 +68,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Empower your learning journey with our innovative app designed to connect students and teachers seamlessly. Enjoy personalized lessons, interactive tools, and a supportive community to enhance education at every step.',
+                  'Make it easy to interact classroom system vertually both the teaching and learning journey with our innovative app designed to connect students and teachers seamlessly. Enjoy personalized lessons, interactive tools, and a supportive community to enhance education at every step.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -227,7 +227,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
                               children: [
                                 const Padding(
                                   padding: EdgeInsets.all(8.0),
-                                  child: Text('Basic features are free, with premium options available.', style: TextStyle(color: Colors.white70)),
+                                  child: Text('Yes it is tatally free!', style: TextStyle(color: Colors.white70)),
                                 ),
                               ],
                               onExpansionChanged: (expanded) => setState(() => _showAnswer3 = expanded),
