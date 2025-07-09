@@ -12,6 +12,10 @@ class AboutUsPage extends StatefulWidget {
 
 class _AboutUsPageState extends State<AboutUsPage> {
   List<Map<String, String>> _aboutUsData = [];
+  bool _showAnswer1 = false;
+  bool _showAnswer2 = false;
+  bool _showAnswer3 = false;
+  bool _showAnswer4 = false;
 
   @override
   void initState() {
@@ -29,6 +33,10 @@ class _AboutUsPageState extends State<AboutUsPage> {
           'image': 'assets/profile.png',
         };
       });
+      _aboutUsData[0] = {'name': 'Member 1', 'email': 'paulbiplop100@gmail.com', 'image': 'assets/biplop.png'};
+      _aboutUsData[1] = {'name': 'Member 2', 'email': 'sarafaria924@gmail.com', 'image': 'assets/sara.png'};
+      _aboutUsData[2] = {'name': 'Member 3', 'email': 'tabassumanisha09@gmail.com', 'image': 'assets/anisha.png'};
+      _aboutUsData[3] = {'name': 'Member 4', 'email': 'atiyafahmida42@gmail.com', 'image': 'assets/atiya.png'};
     });
   }
 
@@ -49,35 +57,22 @@ class _AboutUsPageState extends State<AboutUsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Center(
-                  child: Image.asset(
-                    'assets/dulogo.png',
-                    width: 220,
-                    height: 110,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 220,
-                        height: 110,
-                        child: const Icon(
-                          Icons.image_not_supported,
-                          size: 60,
-                          color: Colors.white70,
-                        ),
-                      );
-                    },
-                  )
-                      .animate()
-                      .fadeIn(duration: 800.ms)
-                      .scaleXY(begin: 0.8, end: 1.0, curve: Curves.easeOut),
-                ),
                 const SizedBox(height: 16),
                 const Text(
-                  'University Of Dhaka',
+                  'Welcome to Our Student-Teacher App!',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Empower your learning journey with our innovative app designed to connect students and teachers seamlessly. Enjoy personalized lessons, interactive tools, and a supportive community to enhance education at every step.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white70,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -163,6 +158,91 @@ class _AboutUsPageState extends State<AboutUsPage> {
                               ),
                             );
                           }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ).animate().fadeIn(duration: 600.ms).slideY(
+                  begin: 0.5,
+                  end: 0,
+                  duration: 600.ms,
+                  curve: Curves.easeOut,
+                ),
+                const SizedBox(height: 30),
+                const Text(
+                  'Frequently Asked Questions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            ExpansionTile(
+                              title: const Text('What is this app about?', style: TextStyle(color: Colors.white)),
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text('This app connects students and teachers for personalized learning experiences.', style: TextStyle(color: Colors.white70)),
+                                ),
+                              ],
+                              onExpansionChanged: (expanded) => setState(() => _showAnswer1 = expanded),
+                            ),
+                            ExpansionTile(
+                              title: const Text('How do I sign up?', style: TextStyle(color: Colors.white)),
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text('Download the app and follow the registration steps with your email.', style: TextStyle(color: Colors.white70)),
+                                ),
+                              ],
+                              onExpansionChanged: (expanded) => setState(() => _showAnswer2 = expanded),
+                            ),
+                            ExpansionTile(
+                              title: const Text('Is it free to use?', style: TextStyle(color: Colors.white)),
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text('Basic features are free, with premium options available.', style: TextStyle(color: Colors.white70)),
+                                ),
+                              ],
+                              onExpansionChanged: (expanded) => setState(() => _showAnswer3 = expanded),
+                            ),
+                            ExpansionTile(
+                              title: const Text('How can I contact support?', style: TextStyle(color: Colors.white)),
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text('Reach out via the support email listed in the app settings.', style: TextStyle(color: Colors.white70)),
+                                ),
+                              ],
+                              onExpansionChanged: (expanded) => setState(() => _showAnswer4 = expanded),
+                            ),
+                          ],
                         ),
                       ),
                     ),
